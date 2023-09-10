@@ -1,0 +1,92 @@
+---
+title: "Visualization"
+date: "07/09/2021"
+output: html_document
+---
+
+# DATA VISUALIZATION 
+
+```{r}
+library(dplyr)
+library(missForest)
+library(tidyr)
+library(ggplot2)
+library(ggthemes)
+library(lubridate)
+library(dplyr)
+library(DT)
+library(scales)
+```
+
+```{r}
+colors = c("#CC1011", "#665555", "#05a399", "#cfcaca", "#f5e840", "#0683c9", "#e075b0")
+```
+
+
+```{r}
+#loading the cleaned data set.
+ds <- read.csv("cleaned_dataset.csv")
+head(ds)
+```
+## Pie Chart showing the percentages of vendor IDs
+```{r}
+x <- table(ds$vendor_id)
+labels <- c("Vendor ID 1", "Vendor ID 2")
+piepercent<- round(100*x/sum(x), 1)
+pie(x, labels = piepercent, main = "Vendor ID pie chart", radius = 0.9, col = rainbow(length(x)))
+
+legend("topright", c("Vendor ID 1","Vendor ID 2"), cex = 0.8,
+   fill = rainbow(length(x)))
+```
+
+## Inference:
+Vendors with ID 2 have greater occurrence than those with ID 1 in the given data set.
+
+## Bar graph comparing number of passengers with number of Taxi Trips
+```{r}
+options(scipen=10000)
+barplot(table(ds$num_passengers),xlab = "Number of trips", ylab = "Number of passengers per trip", main = "Number Of Taxi Trips VS Number of Passengers", col="green", border="red", horiz=TRUE, sort="-")
+```
+
+## Inference:
+From the above horizontal bar graph, we find that most of the trips are accompanied by a single passenger in the taxi.
+
+## Bar graph for payment method
+```{r}
+barplot(table(ds$payment_method), xlab= "Payment Method", ylab="Frequency", main="Frequency of payment methods used", col="yellow", border="blue")
+```
+
+## Inference:
+From the above bar graph, we find that payment method 1 is the most prevalent. Payment methods 3 and 4 have minimal occurence for the given data set.
+
+## Scatter plot with a trend line to understand correlation between the distance and total amount of taxi fare.
+```{r}
+plot(x = ds$distance,y = ds$total_amount,
+   xlab = "Distance (km)",
+   ylab = "Total Amount for trip",
+   main = "Distance vs Total Amount",
+   col = "blue",
+   abline(lm(ds$distance ~ ds$total_amount), col="red")
+)
+```
+
+## Inference:
+The above scatter plot analyzes the relationship between total amount for trip and distance in kilometers. The trend line is almost horizontal and slightly slant in the upward direction. This explains that distance and total amount are positively correlated in minuscule proportion.
+
+## Histogram for pickup locations
+```{r}
+h1<-hist(ds$pickup_loc,xlab="Pickup Location", ylab="Number of Trips", col="orange", main="Frequency of Pickup Locations")
+text(h1$mids,h1$counts,labels=h1$counts, cex = 0.5, pos = 3)
+```
+
+## Inference:
+The above histogram shows the distribution of pickup location with the number of trips. Some locations in the 150-200 and 200-250 range are highly picked by passengers.
+
+## Histogram for drop location
+```{r}
+h2<-hist(ds$drop_loc, xlab="Drop Location", ylab="Number of Trips", col="purple", main="Frequency of Drop Locations")
+text(h2$mids,h2$counts,labels=h2$counts, cex = 0.5, pos = 3)
+```
+
+## Inference:
+The above histogram shows the distribution of drop location with the number of trips. Some locations in the 150-200 and 200-250 range are the places where many trips end.

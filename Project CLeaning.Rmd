@@ -1,0 +1,109 @@
+---
+title: "Project Cleaning"
+author: "Sanjana Godiawala"
+date: "23/11/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+## Dataset
+```{r}
+library(dplyr)
+library(missForest)
+library(tidyr)
+```
+
+```{r}
+ds <- read.csv("dataset_train.csv")
+head(ds)
+```
+## Dimension of the dataset
+```{r}
+dim(ds)
+```
+
+## Structure of the dataset
+
+```{r}
+str(ds)
+```
+## Dataset Summary 
+```{r}
+summary(ds)
+```
+## Checking for nul values
+```{r}
+sum(is.na(ds))
+```
+## Since there are only 6 nul values omiting these rows. 
+```{r}
+ds <- na.omit(ds)
+sum(is.na(ds))
+```
+## Printing the head and tail of the dataset
+```{r}
+head(ds)
+tail(ds)
+#Random 10 records
+sample_n(ds,10)
+```
+## Factoring the columns vendor id, pick loc, drop loc,number of passenger,payment method, rate and store flag for categorising the data values as it is more favorable for processing. 
+
+```{r}
+ds$vendor_id <- factor(ds$vendor_id)
+ds$pickup_loc <- factor(ds$pickup_loc)
+ds$drop_loc <- factor(ds$drop_loc)
+ds$num_passengers <- factor(ds$num_passengers)
+ds$payment_method <- factor(ds$payment_method)
+ds$rate_code <- factor(ds$rate_code)
+ds$stored_flag <- factor(ds$stored_flag)
+str(ds)
+```
+## Change the type of driver tip and total_amount to numeric
+
+```{r}
+ds$driver_tip <- as.numeric(ds$driver_tip)
+ds$total_amount <- as.numeric(ds$total_amount)
+str(ds)
+summary(ds)
+```
+
+## Numeric conversion 
+```{r}
+ds$mta_tax <- as.numeric(ds$mta_tax)
+ds$extra_charges <- as.numeric(ds$extra_charges)
+ds$improvement_charge <- as.numeric(ds$improvement_charge)
+ds$toll_amount <- as.numeric(ds$toll_amount)
+```
+
+## Date conversion
+```{r}
+ds <- ds %>% separate(pickup_time,c("Pickup_date","Pickup_Time"),sep=" ")
+ds <- ds %>% separate(drop_time,c("Drop_date","Drop_Time"),sep=" ")
+ds$Pickup_date <- as.Date(ds$Pickup_date,format = "%d-%m-%Y")
+ds$Drop_date <- as.Date(ds$Drop_date,format = "%d-%m-%Y")
+ds$Drop_Time <-strptime(ds$Drop_Time, format = "%H:%M")
+ds$Pickup_Time <- strptime(ds$Pickup_Time,format="%H:%M")
+str(ds)
+```
+
+```{r}
+ds <- na.omit(ds)
+sum(is.na(ds))
+summary(ds)
+## removing duplicate rows
+ds <- distinct(ds)
+dim(ds)
+```
+
+## Adding a column Duration which is difference of pick-up and drop-off time
+```{r}
+ds$Duration <- difftime(ds$Drop_Time, ds$Pickup_Time, units = "mins")
+head(ds)
+```
+
+## storing the cleaned dataset
+
+```{r}
+write.csv(ds,"cleaned_dataset.csv",row.names = FALSE)
+```

@@ -1,0 +1,61 @@
+---
+title: "Statistics Review"
+author: "Charu Anant Rajput"
+output/: html_document/
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# Reading the dataset
+data = read.csv("cleaned_dataset.csv")
+str(data)
+
+#descriptive statistics by vendor id
+by(data,data$vendor_id,summary)
+
+#descriptive statistics by rate code
+by(data,data$rate_code,summary)
+```
+
+# Caculating the mean across the trip duration and trip fare column
+```{r 1}
+mean(data$Duration)
+mean(data$total_amount)
+```
+
+```{r 2}
+pick = table(data$pickup_loc)
+drop = table(data$drop_loc)
+
+which.max(pick)
+which.max(drop)
+
+```
+
+```{r}
+library(dplyr)
+data$vendor_id = as.factor(data$vendor_id)
+#computing max, min and standard dev
+data %>% filter(data$pickup_loc == "161" && data$drop_loc == "157" && data$vendor_id == "2") %>%
+  summarize(std_dur=sd(data$Duration),mn_duration=mean(data$Duration))
+
+#computing max, min and standard dev
+data %>% filter(data$pickup_loc == "161" && data$drop_loc == "157" && data$vendor_id=="2") %>%
+  summarize(std_fare=sd(data$total_amount),mn_fare=mean(data$total_amount))
+
+
+
+
+```
+
+## Determing which payment method is the most favoured. 1 - creadit card is most favoured medium of payment.
+```{r}
+amount_mean = tapply(data$total_amount,data$payment_method,mean)
+amount_mean
+max(amount_mean)
+which.max(amount_mean)
+```

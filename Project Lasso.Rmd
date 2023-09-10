@@ -1,0 +1,83 @@
+---
+title: "Project Lasso"
+author: "Charu Rajput"
+date: "23/11/2021"
+output: html_document
+---
+## Lasso Regression
+```{r}
+# importing the dataset
+data = read.csv('cleaned_dataset.csv')
+str(data)
+``` 
+
+```{r}
+# displaying the dataset
+head(data,6)
+View(data)
+#Importing the necessary libraries
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(caret)
+```
+
+```{r}
+# making a new dataset with the columns we feel can impact the total cost
+
+sig_data = data[, c('num_passengers', 'toll_amount', 'distance','rate_code','Duration','total_amount')]
+head(sig_data)
+
+# Now generating the model summary in order to get the level of significance
+set.seed(123)
+dim(sig_data)
+train_samples <- sig_data$total_amount %>%
+createDataPartition(p=0.8,list=FALSE)
+head(train_samples)
+train <- sig_data[train_samples,]
+test <- sig_data[-train_samples,]
+train1 <- sample_frac(train,0.01)
+test1 <- sample_frac(test,0.01)
+
+```
+
+```{r}
+
+library(glmnet)
+x = as.matrix(train1)
+y_train = train1$total_amount
+x_test = as.matrix(test1)
+y_test = test1$total_amount
+lambdas <- 10^seq(2, -3, by = -.1)
+
+# Setting alpha = 1 implements lasso regression
+lasso_reg <- cv.glmnet(x, y_train, alpha = 1, lambda = lambdas, standardize = TRUE, nfolds = 5)
+
+# Best 
+lambda_best <- lasso_reg$lambda.min 
+lambda_best
+```
+
+```{r}
+lasso_model <- glmnet(x, y_train, alpha = 1, lambda = lambda_best, standardize = TRUE)
+
+predictions_train <- predict(lasso_model, s = lambda_best, newx = x)
+
+eval_results <- function(true, predicted, df) {
+  SSE <- sum((predicted - true)^2)
+  SST <- sum((true - mean(true))^2)
+  R_square <- 1 - SSE / SST
+  RMSE = sqrt(SSE/nrow(df))
+# Model performance metrics
+data.frame(
+  RMSE = RMSE,
+  Rsquare = R_square
+)
+  
+}
+  
+eval_results(y_train, predictions_train, train)
+
+predictions_test <- predict(lasso_model, s = lambda_best, newx = x_test)
+eval_results(y_test, predictions_test, test)
+```

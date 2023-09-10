@@ -1,0 +1,203 @@
+---
+title: "Project - XGBoost Regression Model"
+author: "Ashwani Prasad"
+date: "03/12/2021"
+output: html_document
+---
+## Step 1: Loading all the libraries
+```{r}
+library(xgboost)
+library(readr)
+library(stringr)
+library(caret)
+library(car)
+library(tidyverse)
+library(DataCombine)
+library(dplyr)
+library(BBmisc)
+library(rminer)
+```
+
+## Step 2: Working with the train dataset
+```{r}
+# load the datatset
+setwd("D:\\VIT Academics 2019-23\\sem 5\\CSE3505 Foundations of Data Analytics\\CSE3505 project\\chh-ola\\")
+
+# Load training data file
+data =  read_csv("train.csv")
+test = read_csv("test.csv")
+```
+```{r}
+# Check for the number of rows with null values
+sum(is.na(data))
+```
+```{r}
+# Showing the columns of the train dataset
+names(data)
+```
+```{r}
+dim(data)
+```
+```{r}
+#Conversion to datetime format
+ 
+data$pickup_time <- as.POSIXct(data$pickup_time, format="%m-%d-%Y %H:%M")
+ 
+data$drop_time <- as.POSIXct(data$drop_time, format="%m-%d-%Y %H:%M")
+```
+
+```{r}
+data$trip_duration = data$drop_time - data$pickup_time
+data$trip_duration = as.numeric(data$trip_duration)
+```
+
+```{r}
+drop <- c('pickup_time', "drop_time",'ID', "vendor_id", "drop_loc", "pickup_loc", "stored_flag", "mta_tax", "improvement_charge" )
+data = data[,!(names(data)%in%drop)]
+dim(data)
+```
+```{r}
+str(data)
+```
+```{r}
+head(data)
+```
+```{r}
+names(data)
+```
+
+```{r}
+sum(is.na(data))
+```
+```{r}
+cat_cols = c("driver_tip", "toll_amount", "extra_charges", "totalamount")
+num_cols = c("distance", "num_passengers", "payment_method", "rate_code", "trip_duration")
+```
+
+## Step 3 - Data cleaning and imputation
+```{r}
+data <- data %>% mutate(distance = replace(distance, is.na(distance), mean(distance, na.rm=TRUE)))
+
+data <- data %>% mutate(num_passengers = replace(num_passengers, is.na(num_passengers), median(num_passengers, na.rm=TRUE)))
+
+data <- data %>% mutate(payment_method = replace(payment_method, is.na(payment_method), median(payment_method, na.rm=TRUE)))
+
+data <- data %>% mutate(rate_code = replace(rate_code, is.na(rate_code), median(rate_code, na.rm=TRUE)))
+
+data <- data %>% mutate(trip_duration = replace(trip_duration, is.na(trip_duration), mean(distance, na.rm=TRUE)))
+sum(is.na(data))
+```
+```{r}
+data$totalamount = as.numeric(data$totalamount)
+str(data)
+```
+
+```{r}
+data = DropNA(data)
+```
+```{r}
+dim(data)
+```
+```{r}
+# Storing the total amount column in y
+y = data$totalamount
+
+```
+
+```{r}
+# Dropping the total amount from the training data
+drop2 = c("totalamount")
+data= data[,!(names(data)%in%drop2)]
+dim(data)
+```
+## Step 4: Model Building
+```{r}
+# setting 75% data for training and the rest for testing
+set.seed(123)
+test_inds = createDataPartition(y = 1:length(y), p = 0.80, list = FALSE)
+```
+
+```{r}
+# Split data into test/train using indices
+X = data
+X_test = X[test_inds, ]; y_test = y[test_inds] 
+X_train = X[-test_inds, ]; y_train = y[-test_inds]
+
+```
+
+```{r}
+# building the XGBoost model
+dtrain <- xgb.DMatrix(data = as.matrix(X), label = y)
+xgb <- xgboost(data = dtrain, 
+               nrounds = 50,
+               max_depth = 10
+)
+
+
+```
+
+## Step 5: Working with the testing dataset
+```{r}
+# Conversion to datetime format
+
+test$pickup_time <- as.POSIXct(test$pickup_time, format="%m-%d-%Y %H:%M")
+
+test$drop_time <- as.POSIXct(test$drop_time, format="%m-%d-%Y %H:%M")
+
+test$trip_duration = test$drop_time - test$pickup_time
+test$trip_duration = as.numeric(test$trip_duration)
+
+dim(test)
+```
+```{r}
+str(test)
+```
+```{r}
+# dropping the less useful columns for prediction
+drop3 = c('pickup_time', "drop_time",'ID', "vendor_id", "drop_loc", "pickup_loc", "stored_flag", "mta_tax", "improvement_charge" )
+test = test[,!(names(test)%in%drop3)]
+dim(test)
+
+```
+```{r}
+str(test)
+```
+
+## Step 6: Predicting the the taxi trip total fare
+
+```{r}
+# predict values in the test test
+y_pred <-predict(xgb, data.matrix(test))
+pred <- unlist(y_pred)
+predicted_df = data.frame(ID = c(0:5), total_amount = head(pred))
+predicted_df
+```
+```{r}
+model <- xgb.dump(xgb, with.stats = T)
+model[1:10] #This statement prints top 10 nodes of the model
+```
+
+
+## Step 7: Model Evaluation 
+```{r}
+# Calculate the root mean square error (RMSE) for test set
+residuals = y_test - y_pred
+RMSE = sqrt(mean(residuals^2))
+print(paste0("RMSE = ", round(RMSE,4)))
+
+```
+
+```{r}
+# Calculate R-squared for test set
+y_test_mean = mean(y_test)
+
+# Calculate total sum of squares
+TSS = sum((y_test - y_test_mean)^2)
+# Calculate residual sum of squares
+RSS = sum((y_pred - y_test_mean)^2)
+# Calculate R-squared
+R_squared =  (RSS/TSS)
+print(paste0("R-squared = ", round(R_squared,3)))
+```
+
+

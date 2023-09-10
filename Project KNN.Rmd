@@ -1,0 +1,65 @@
+---
+title: "Project KNN"
+author: "Sanjana Godiawala"
+date: "24/11/2021"
+output: html_document
+---
+### KNN model
+```{r}
+# importing the dataset
+data = read.csv('cleaned_dataset.csv')
+str(data)
+``` 
+
+```{r}
+# displaying the dataset
+head(data,6)
+View(data)
+#Importing the necessary libraries
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(caret)
+```
+
+```{r}
+# making a new dataset with the columns we feel can impact the total cost
+
+sig_data = data[, c('num_passengers', 'toll_amount', 'distance','rate_code','Duration','total_amount')]
+head(sig_data)
+
+# Now generating the model summary in order to get the level of significance
+set.seed(123)
+dim(sig_data)
+train_samples <- sig_data$total_amount %>%
+createDataPartition(p=0.8,list=FALSE)
+head(train_samples)
+train <- sig_data[train_samples,]
+test <- sig_data[-train_samples,]
+train1 <- sample_frac(train,0.1)
+test1 <- sample_frac(test,0.1)
+
+```
+
+```{r}
+#install.packages("class")
+library(class)
+knn_model_pred<- knn(
+train1,
+test1,
+k = 5,
+train1$total_amount
+)
+```
+
+### Assesing the precision of prediction by calculating RMSE and R2 value
+
+#model performance
+```{r}
+RMSE <- RMSE(as.numeric(knn_model_pred),test1$total_amount)
+RMSE
+R2 <- R2(as.numeric(knn_model_pred),test1$total_amount)
+R2
+# The model has performed good as the R2 value is pretty close to 1
+
+```
